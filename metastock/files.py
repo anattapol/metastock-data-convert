@@ -4,8 +4,8 @@ Reading metastock files.
 
 import struct
 import re
-import math
 import traceback
+import os.path
 
 from .utils import fmsbin2ieee, float2date, float2time
 
@@ -40,6 +40,9 @@ class DataFileInfo(object):
         Read columns names from the DOP file
         """
         filename = 'F%d.DOP' % self.file_num
+        if (not os.path.isfile(filename)):
+            self.columns = ['DATE', 'OPEN', 'HIGH', 'LOW', 'CLOSE', 'VOL', 'OI']
+            return
         file_handle = open(filename, 'r')
         lines = file_handle.read().split()
         file_handle.close()
@@ -164,7 +167,7 @@ class DataFileInfo(object):
             outfile.write('\n')
 
             # we have (self.last_rec - 1) candles to read
-            for _ in xrange(self.last_rec - 1):
+            for _ in range(self.last_rec - 1):
                 outfile.write(self.stock_symbol)
                 for col in columns:
                     if col is None: # unknown column?
@@ -191,14 +194,14 @@ class DataFileInfo(object):
         """
         Load Metastock data file and output the data to text file.
         """
-        print "Processing %s (fileNo %d)" % (self.stock_symbol, self.file_num)
+        print(("Processing %s (fileNo %d)" % (self.stock_symbol, self.file_num)))
         try:
             #print self.stock_symbol, self.file_num
             self._load_columns()
             #print self.columns
             self.load_candles()
         except Exception:
-            print "Error while converting symbol", self.stock_symbol
+            print(("Error while converting symbol", self.stock_symbol))
             traceback.print_exc()
 
 class MSEMasterFile(object):
@@ -221,9 +224,9 @@ class MSEMasterFile(object):
         file_handle.read(3)
         dfi.num_fields = struct.unpack("B", file_handle.read(1))[0]
         file_handle.read(4)
-        dfi.stock_symbol = file_handle.read(14).strip('\x00')
+        dfi.stock_symbol = (file_handle.read(14)).decode('ascii').strip('\x00')
         file_handle.read(7)
-        dfi.stock_name = file_handle.read(16).strip('\x00')
+        dfi.stock_name = (file_handle.read(16)).decode('ascii').strip('\x00')
         file_handle.read(12)
         dfi.time_frame = struct.unpack("c", file_handle.read(1))[0]
         file_handle.read(3)
@@ -259,10 +262,10 @@ class MSEMasterFile(object):
         Lists all the symbols from metastock index file and writes it
         to the output
         """
-        print "List of available symbols:"
+        print("List of available symbols:")
         for stock in self.stocks:
-            print "symbol: %s, name: %s, file number: %s" % \
-                (stock.stock_symbol, stock.stock_name, stock.file_num)
+            print(("symbol: %s, name: %s, file number: %s" % \
+                (stock.stock_symbol, stock.stock_name, stock.file_num)))
 
     def output_ascii(self, all_symbols, symbols):
         """

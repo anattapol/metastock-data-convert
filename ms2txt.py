@@ -16,6 +16,7 @@ Examples:
     %prog FW20 "S&P500"     extract FW20 and S&P500 from EMASTER file
 """
 
+
 def main():
     """
     launched when running this file
@@ -29,7 +30,6 @@ def main():
     parser.add_option("-p", "--precision", type="int", dest="precision",
                       help="round the floating point numbers to PRECISION digits after the decimal point (default: 2)")
 
-
     (options, args) = parser.parse_args()
 
     # check if the options are valid
@@ -38,11 +38,13 @@ def main():
         sys.exit(0)
 
     em_file = MSEMasterFile('EMASTER', options.precision)
+
     # list the symbols or extract the data
     if options.list:
         em_file.list_all_symbols()
     else:
         em_file.output_ascii(options.all, args)
+
 
 if __name__ == "__main__":
     main()

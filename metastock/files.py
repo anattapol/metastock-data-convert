@@ -7,7 +7,8 @@ import re
 import traceback
 import os.path
 
-from .utils import fmsbin2ieee, float2date, float2time
+from .utils import fmsbin2ieee, float2date, float2time, int2date
+
 
 class DataFileInfo(object):
     """
@@ -40,7 +41,7 @@ class DataFileInfo(object):
         Read columns names from the DOP file
         """
         filename = 'F%d.DOP' % self.file_num
-        if (not os.path.isfile(filename)):
+        if not os.path.isfile(filename):
             self.columns = ['DATE', 'OPEN', 'HIGH', 'LOW', 'CLOSE', 'VOL', 'OI']
             return
         file_handle = open(filename, 'r')
@@ -79,9 +80,9 @@ class DataFileInfo(object):
 
     class DateColumn(Column):
         """A date column"""
-        def read(self, bytes):
+        def read(self, in_bytes):
             """Convert from MBF to date string"""
-            return float2date(fmsbin2ieee(bytes))
+            return float2date(fmsbin2ieee(in_bytes))
 
         def format(self, value):
             if value is not None:
@@ -90,9 +91,9 @@ class DataFileInfo(object):
 
     class TimeColumn(Column):
         """A time column"""
-        def read(self, bytes):
+        def read(self, in_bytes):
             """Convert read bytes from MBF to time string"""
-            return float2time(fmsbin2ieee(bytes))
+            return float2time(fmsbin2ieee(in_bytes))
 
         def format(self, value):
             if value is not None:
@@ -106,18 +107,18 @@ class DataFileInfo(object):
         """
         precision = 2
 
-        def read(self, bytes):
+        def read(self, in_bytes):
             """Convert bytes containing MBF to float"""
-            return fmsbin2ieee(bytes)
+            return fmsbin2ieee(in_bytes)
 
         def format(self, value):
             return ("%0."+str(self.precision)+"f") % value
 
     class IntColumn(Column):
         """An integer column"""
-        def read(self, bytes):
+        def read(self, in_bytes):
             """Convert MBF bytes to an integer"""
-            return int(fmsbin2ieee(bytes))
+            return int(fmsbin2ieee(in_bytes))
 
     # we map a metastock column name to an object capable reading it
     knownMSColumns = {
@@ -145,18 +146,18 @@ class DataFileInfo(object):
         try:
             filename = 'F%d.DAT' % self.file_num
             file_handle = open(filename, 'rb')
-            self.max_recs = struct.unpack("H", file_handle.read(2))[0]
-            self.last_rec = struct.unpack("H", file_handle.read(2))[0]
+            self.max_recs = struct.unpack('H', file_handle.read(2))[0]
+            self.last_rec = struct.unpack('H', file_handle.read(2))[0]
 
             # not sure about this, but it seems to work
             file_handle.read((self.num_fields - 1) * 4)
 
-            #print "Expecting %d candles in file %s. num_fields : %d" % \
+            # print "Expecting %d candles in file %s. num_fields : %d" % \
             #    (self.last_rec - 1, filename, self.num_fields)
 
             outfile = open('%s.TXT' % self.stock_symbol, 'w')
             # write the header line, for example:
-            #"Name","Date","Time","Open","High","Low","Close","Volume","Oi"
+            # "Name","Date","Time","Open","High","Low","Close","Volume","Oi"
             outfile.write('"Name"')
             columns = []
             for ms_col_name in self.columns:
@@ -175,9 +176,9 @@ class DataFileInfo(object):
                         file_handle.read(self.unknownColumnDataSize)
                     else:
                         # read the column data
-                        bytes = file_handle.read(col.dataSize)
+                        r_bytes = file_handle.read(col.dataSize)
                         # decode the data
-                        value = col.read(bytes)
+                        value = col.read(r_bytes)
                         # format it
                         value = col.format(value)
 
@@ -196,9 +197,9 @@ class DataFileInfo(object):
         """
         print(("Processing %s (fileNo %d)" % (self.stock_symbol, self.file_num)))
         try:
-            #print self.stock_symbol, self.file_num
+            # print self.stock_symbol, self.file_num
             self._load_columns()
-            #print self.columns
+            # print self.columns
             self.load_candles()
         except Exception:
             print(("Error while converting symbol", self.stock_symbol))
@@ -230,11 +231,9 @@ class MSEMasterFile(object):
         file_handle.read(12)
         dfi.time_frame = struct.unpack("c", file_handle.read(1))[0]
         file_handle.read(3)
-        dfi.first_date = float2date(struct.unpack("f", \
-                                                   file_handle.read(4))[0])
+        dfi.first_date = float2date(struct.unpack("f", file_handle.read(4))[0])
         file_handle.read(4)
-        dfi.last_date = float2date(struct.unpack("f", \
-                                                  file_handle.read(4))[0])
+        dfi.last_date = float2date(struct.unpack("f", file_handle.read(4))[0])
         file_handle.read(116)
         return dfi
 
@@ -251,7 +250,7 @@ class MSEMasterFile(object):
         last_file = struct.unpack("H", file_handle.read(2))[0]
         file_handle.read(188)
         self.stocks = []
-        #print files_no, last_file
+        # print files_no, last_file
         while files_no > 0:
             self.stocks.append(self._read_file_info(file_handle))
             files_no -= 1
@@ -264,8 +263,81 @@ class MSEMasterFile(object):
         """
         print("List of available symbols:")
         for stock in self.stocks:
-            print(("symbol: %s, name: %s, file number: %s" % \
-                (stock.stock_symbol, stock.stock_name, stock.file_num)))
+            print(("symbol: %s, name: %s, file number: %s" %
+                   (stock.stock_symbol, stock.stock_name, stock.file_num)))
+
+    def output_ascii(self, all_symbols, symbols):
+        """
+        Read all or specified symbols and write them to text
+        files (each symbol in separate file)
+        @param all_symbols: when True, all symbols are processed
+        @type all_symbols: C{bool}
+        @param symbols: list of symbols to process
+        """
+        for stock in self.stocks:
+            if all_symbols or (stock.stock_symbol in symbols):
+                stock.convert2ascii()
+
+class MSXMasterFile(object):
+    """
+    Metastock XMASTER index file
+    @ivar stocks: list of DataFileInfo objects
+    """
+    stocks = None
+
+    def _read_file_info(self, file_handle):
+        """
+        read the entry for a single symbol and return a DataFileInfo
+        describing it
+        @parm file_handle: emaster file handle
+        @return: DataFileInfo instance
+        """
+        dfi = DataFileInfo()
+        file_handle.read(1)
+        dfi.stock_symbol = (file_handle.read(15)).decode('ascii').strip('\x00')
+        dfi.stock_name = (file_handle.read(46)).decode('ascii').strip('\x00')
+        dfi.time_frame = struct.unpack("c", file_handle.read(1))[0]
+        file_handle.read(2)
+        dfi.file_num = struct.unpack("I", file_handle.read(2))[0]
+        file_handle.read(30)
+        dfi.first_date = int2date(struct.unpack("I", file_handle.read(4))[0])
+        file_handle.read(8)
+        dfi.last_date = int2date(struct.unpack("I", file_handle.read(4))[0])
+        file_handle.read(30)
+        return dfi
+
+    def __init__(self, filename, precision=None):
+        """
+        The whole file is read while creating this object
+        @param filename: name of the file to open (usually 'XMASTER')
+        @param precision: round floats to n digits after the decimal point
+        """
+        if precision is not None:
+            DataFileInfo.FloatColumn.precision = precision
+        file_handle = open(filename, 'rb')
+        file_handle.read(10)
+        files_no = struct.unpack("H", file_handle.read(2))[0]
+        file_handle.read(2)
+        last_file = struct.unpack("H", file_handle.read(2))[0]
+        file_handle.read(2)
+        next = struct.unpack("H", file_handle.read(2))[0]
+        file_handle.read(128)
+        self.stocks = []
+        # print files_no, last_file
+        while files_no > 0:
+            self.stocks.append(self._read_file_info(file_handle))
+            files_no -= 1
+        file_handle.close()
+
+    def list_all_symbols(self):
+        """
+        Lists all the symbols from metastock index file and writes it
+        to the output
+        """
+        print("List of available symbols:")
+        for stock in self.stocks:
+            print(("symbol: %s, name: %s, file number: %s" %
+                   (stock.stock_symbol, stock.stock_name, stock.file_num)))
 
     def output_ascii(self, all_symbols, symbols):
         """

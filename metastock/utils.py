@@ -5,6 +5,7 @@ Helper methods
 import struct
 import datetime
 
+
 def fmsbin2ieee(in_bytes):
     """
     Convert an array of 4 bytes containing Microsoft Binary floating point
@@ -23,6 +24,7 @@ def fmsbin2ieee(in_bytes):
     bytes2 = bytes([in_bytes[0], in_bytes[1], (man & 255), ((man >> 8) & 255)])
     return struct.unpack('f', bytes2)[0]
 
+
 def float2date(date):
     """
     Metastock stores date as a float number.
@@ -33,6 +35,11 @@ def float2date(date):
     month = int((date % 10000) / 100)
     day = date % 100
     return datetime.date(year, month, day)
+
+
+def int2date(date):
+    return float2date(date)
+
 
 def float2time(time):
     """

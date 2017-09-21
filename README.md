@@ -1,18 +1,27 @@
-Author: mech
+## Author: mech
 
 Python utility that reads Metastock data files and save the quotations in
 text files.
 Full article is available here: http://themech.net/2008/08/reading-metastock-files/
 
-Usage:
+## Usage:
 Run this script from the directory containing metastock data (it should contain
 EMASTER file).
 
 Listing the symbols in Metastock data:
+```python
 python <path>/ms2txt.py --list
+```
 
 Extracting all quotes:
+```python
 python <path>/ms2txt.py --all
+```
 
 More help:
+```python
 python <path>/ms2txt.py --help
+```
+
+## Require Modules
+- pymysql

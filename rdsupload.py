@@ -29,7 +29,7 @@ def main():
 
     # Run Application
     trader = RLTraderConnector(options)
-    trader.test()
+    trader.test('SET')
 
 if __name__ == '__main__':
     main()

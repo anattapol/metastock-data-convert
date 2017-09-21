@@ -26,10 +26,10 @@ class RLTraderConnector(object):
         if self.connection:
             self.connection.close()
 
-    def test(self):
+    def test(self, symbol):
         with self.connection.cursor() as cursor:
             # Read a single record
-            sql = "SELECT * FROM `market` where id=%s"
-            cursor.execute(sql, (int(0),))
+            sql = "SELECT * FROM `market` where name=%s"
+            cursor.execute(sql, (symbol,))
             result = cursor.fetchone()
             print(result)

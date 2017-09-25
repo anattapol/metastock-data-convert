@@ -25,6 +25,8 @@ def main():
                       help='database config')
     parser.add_option('-i', '--input', type='string', dest='input_dir',
                       help='input directory')
+    parser.add_option('-f', '--force', action='store_true', dest='force',
+                      help='force replace')
     (options, args) = parser.parse_args()
 
     options.config_path = not (options.config_path) and 'dbconfig.json' or os.path.realpath(options.config_path)

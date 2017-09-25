@@ -13,6 +13,7 @@ class RLTraderConnector(object):
     cache_symbol = {}
     config = None
     connection = None
+    force = None
     market_id = None
     upload_payload = []
 
@@ -20,6 +21,7 @@ class RLTraderConnector(object):
         with open(options.config_path) as json_data_file:
             self.config = json.load(json_data_file)['database']
 
+        self.force = options.force
         self.connection = pymysql.connect(
             host=self.config['host'],
             user=self.config['user'],
@@ -48,6 +50,7 @@ class RLTraderConnector(object):
             cursor.execute(sql, (symbol, self.market_id))
             row = cursor.fetchone()
             if row is not None:
+                row['is_new'] = False
                 return row
 
             sql = "INSERT INTO `symbol`(name,market_id) VALUES(%s,%s)"
@@ -57,6 +60,7 @@ class RLTraderConnector(object):
             sql = "SELECT * FROM `symbol` WHERE ID=last_insert_id()"
             cursor.execute(sql)
             row = cursor.fetchone()
+            row['is_new'] = True
             return row
 
     def _process_row(self, row_index, csv_row):
@@ -74,7 +78,9 @@ class RLTraderConnector(object):
 
     def _process_start(self, symbol):
         print('Loading %s...' % symbol)
+        fetch_row = self.get_symbol(symbol)
         self.upload_payload = []
+        return fetch_row['is_new']
 
     def _process_end(self, symbol):
         size = len(self.upload_payload)
@@ -100,12 +106,17 @@ class RLTraderConnector(object):
 
     def _read_csv(self, dir, filename):
         symbol = os.path.splitext(filename)[0]
+
+        # Skip if already uploaded
+        if not self._process_start(symbol) and not self.force:
+            print('Skipped!')
+            return
+
         with open(os.path.join(dir, filename), 'r', newline='') as f:
             reader = csv.reader(f, delimiter=',')
             # Skip Header
             next(reader)
 
-            self._process_start(symbol)
             for i, line in enumerate(reader):
                 self._process_row(i, line)
             self._process_end(symbol)

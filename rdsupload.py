@@ -23,13 +23,16 @@ def main():
     parser = OptionParser(usage=Usage)
     parser.add_option('-c', '--config', type='string', dest='config_path',
                       help='database config')
+    parser.add_option('-i', '--input', type='string', dest='input_dir',
+                      help='input directory')
     (options, args) = parser.parse_args()
 
     options.config_path = not (options.config_path) and 'dbconfig.json' or os.path.realpath(options.config_path)
+    options.input_dir = not (options.input_dir) and '.' or os.path.realpath(options.input_dir)
 
     # Run Application
     trader = RLTraderConnector(options)
-    trader.test('SET')
+    trader.walk_market(options.input_dir, 'SET')
 
 if __name__ == '__main__':
     main()

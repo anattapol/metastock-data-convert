@@ -94,15 +94,15 @@ class RLTraderConnector(object):
             print('Committed')
 
     def walk_market(self, path, filters=None):
+        if isinstance(filters,str):
+            filters = (filters,)
         for dirpath, dirnames, filenames in os.walk(path):
             market = os.path.basename(dirpath)
-            if isinstance(filters,str):
-                filters = (filters,)
-
             if filters is None or market in filters:
                 self.set_market(market)
-                for filename in filenames:
-                    self._read_csv(dirpath, filename)
+                for filename in sorted(filenames):
+                    if len(filename) > 0:
+                        self._read_csv(dirpath, filename)
 
     def _read_csv(self, dir, filename):
         symbol = os.path.splitext(filename)[0]

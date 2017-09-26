@@ -37,7 +37,6 @@ def main():
 
     (options, args) = parser.parse_args()
 
-
     # check if the options are valid
     if not (options.all or options.list or len(args) > 0):
         parser.print_help()

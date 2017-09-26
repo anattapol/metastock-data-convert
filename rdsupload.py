@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 """
-Command line tool used to upload csv data to Amazon RDS
+Command line tool used to upload csv data to MySQL
 """
 
-import sys
 import os.path
 from optparse import OptionParser
 from database.rltrader import RLTraderConnector
@@ -14,6 +13,7 @@ Examples:
     %prog -p 2 --all        extract all symbols from EMASTER file
     %prog FW20 "S&P500"     extract FW20 and S&P500 from EMASTER file
 """
+
 
 def main():
     """
@@ -35,6 +35,7 @@ def main():
     # Run Application
     trader = RLTraderConnector(options)
     trader.walk_market(options.input_dir, 'SET')
+
 
 if __name__ == '__main__':
     main()

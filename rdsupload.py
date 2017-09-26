@@ -16,10 +16,6 @@ Examples:
 
 
 def main():
-    """
-    launched when running this file
-    """
-
     parser = OptionParser(usage=Usage)
     parser.add_option('-c', '--config', type='string', dest='config_path',
                       help='database config')

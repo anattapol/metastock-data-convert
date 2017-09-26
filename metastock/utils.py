@@ -4,13 +4,23 @@ Helper methods
 
 import struct
 import datetime
-import traceback
 
 
 def fmsbin2ieee(b):
     """
     Convert an array of 4 bytes containing Microsoft Binary floating point
     number to IEEE floating point format (which is used by Python)
+
+    Parameters
+    ----------
+    b : byte
+        Microsoft Binary Fucking Floating Point
+
+    Returns
+    -------
+    float
+        Ordinary Floating Point
+
     """
     as_int = struct.unpack('i', b)
     if not as_int:
@@ -30,6 +40,16 @@ def float2date(date):
     """
     Metastock stores date as a float number.
     Here we convert it to a python datetime.date object.
+
+    Parameters
+    ----------
+    date : float
+        YYYYMMDD format (either in int or float)
+
+    Returns
+    -------
+    datetime.date
+
     """
     date = int(date)
     year = 1900 + int(date / 10000)
@@ -39,6 +59,20 @@ def float2date(date):
 
 
 def int2date(date):
+    """
+    Int to date use in XMASTER header format.
+    Does same thing as float2date but sometimes date = 0 so tread as None
+
+    Parameters
+    ----------
+    date : int
+        YYYYMMDD format
+
+    Returns
+    -------
+    datetime.date
+
+    """
     return date > 0 and float2date(date) or None
 
 
@@ -46,26 +80,114 @@ def float2time(time):
     """
     Metastock stores date as a float number.
     Here we convert it to a python datetime.time object.
+
+    Parameters
+    ----------
+    time : int
+        HHMM format
+
+    Returns
+    -------
+    datetime.time
+
     """
     time = int(time)
     hour = int(time / 10000)
     minute = int((time % 10000) / 100)
     return datetime.time(hour, minute)
 
+
 def readstr(b):
+    """
+    Read string block from MetaStock data
+
+    Parameters
+    ----------
+    b : byte
+
+    Returns
+    -------
+    str
+
+    """
     return b.decode('ascii').split('\x00', 1)[0]
 
+
 def readchar(b):
+    """
+    Read single character block from MetaStock data
+
+    Parameters
+    ----------
+    b : byte
+
+    Returns
+    -------
+    char
+
+    """
     return struct.unpack('c', b)[0]
 
+
 def readbyte(b):
+    """
+    Read 1-byte integer from MetaStock data
+
+    Parameters
+    ----------
+    b : byte
+
+    Returns
+    -------
+    byte
+
+    """
     return struct.unpack('B', b)[0]
 
+
 def readshort(b):
+    """
+    Read 2-byte integer from MetaStock data
+
+    Parameters
+    ----------
+    b : byte
+
+    Returns
+    -------
+    int
+
+    """
     return struct.unpack('H', b)[0]
 
+
 def readint(b):
+    """
+    Read 4-byte integer from MetaStock data. Usually found in date field.
+
+    Parameters
+    ----------
+    b : byte
+
+    Returns
+    -------
+    int
+
+    """
     return struct.unpack('<I', b)[0]
 
+
 def readfloat(b):
+    """
+    Read IEEE float from MetaStock data
+
+    Parameters
+    ----------
+    b : byte
+
+    Returns
+    -------
+    float
+
+    """
     return struct.unpack('f', b)[0]

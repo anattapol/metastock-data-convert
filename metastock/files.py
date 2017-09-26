@@ -11,18 +11,37 @@ from .utils import *
 
 class DataFileInfo(object):
     """
-    I represent a metastock data describing a single symbol
-    Each symbol has a number (file_num). To read the quotes we need to read
-    two files: a <file_num>.DAT file with the tick data and a <file_num>.DOP
+    I represent a metastock data describing a single symbol, each symbol has a number (file_num).
+
+    To read the quotes we need to read two files: a <file_num>.DAT file with the tick data and a <file_num>.DOP
     file describing what columns are in the DAT file
-    @ivar file_num: symbol number
-    @ivar num_fields: number of columns in DAT file
-    @ivar stock_symbol: stock symbol
-    @ivar stock_name: full stock name
-    @ivar time_frame: tick time frame (f.e. 'D' means EOD data)
-    @ivar first_date: first tick date
-    @ivar last_date: last tick date
-    @ivar columns: list of columns names
+
+    Private Variables
+    ----------
+    file_num : int
+        Symbol number
+
+    num_fields : int
+        Number of columns in DAT file
+
+    stock_symbol : str
+        Stock symbol
+
+    stock_name : str
+        Full stock name
+
+    time_frame : char
+        Tick time frame (f.e. 'D' means EOD data)
+
+    first_date : date
+        First tick date
+
+    last_date : date
+        Last tick date
+
+    columns : list
+        List of columns names
+
     """
     file_num = None
     num_fields = None
@@ -55,12 +74,17 @@ class DataFileInfo(object):
 
     class Column(object):
         """
-        This is a base class for classes reading metastock data for a specific
-        columns. The read method is called when reading a decode the column
-        value
-        @ivar dataSize: number of bytes is the data file that is used to store
-                        a single value
-        @ivar name: column name
+        This is a base class for classes reading metastock data for a specific columns.
+        The read method is called when reading a decode the column value
+
+        Private Variables
+        ----------
+        dataSize : int
+            Number of bytes is the data file that is used to store a single value
+
+        name : str
+            Column name
+
         """
         dataSize = 4
         name = None
@@ -69,7 +93,9 @@ class DataFileInfo(object):
             self.name = name
 
         def read(self, bytes):
-            """Read and return a column value"""
+            """
+            Read and return a column value
+            """
 
         def format(self, value):
             """
@@ -78,9 +104,13 @@ class DataFileInfo(object):
             return str(value)
 
     class DateColumn(Column):
-        """A date column"""
+        """
+        A date column
+        """
         def read(self, b):
-            """Convert from MBF to date string"""
+            """
+            Convert from MBF to date string
+            """
             return float2date(fmsbin2ieee(b))
 
         def format(self, value):
@@ -89,9 +119,13 @@ class DataFileInfo(object):
             return DataFileInfo.Column.format(self, value)
 
     class TimeColumn(Column):
-        """A time column"""
+        """
+        A time column
+        """
         def read(self, b):
-            """Convert read bytes from MBF to time string"""
+            """
+            Convert read bytes from MBF to time string
+            """
             return float2time(fmsbin2ieee(b))
 
         def format(self, value):
@@ -102,19 +136,28 @@ class DataFileInfo(object):
     class FloatColumn(Column):
         """
         A float column
-        @ivar precision: round floats to n digits after the decimal point
+
+        Private Variables
+        ----------
+        precision : int
+            Round floats to n digits after the decimal point
+
         """
         precision = 2
 
         def read(self, b):
-            """Convert bytes containing MBF to float"""
+            """
+            Convert bytes containing MBF to float
+            """
             return fmsbin2ieee(b)
 
         def format(self, value):
             return ("%0."+str(self.precision)+"f") % value
 
     class IntColumn(Column):
-        """An integer column"""
+        """
+        An integer column
+        """
         def read(self, b):
             """Convert MBF bytes to an integer"""
             return int(fmsbin2ieee(b))
@@ -139,6 +182,15 @@ class DataFileInfo(object):
         """
         Load metastock DAT file and write the content
         to a text file
+
+        Parameters
+        ----------
+        input_dir : str
+            Path of MetaStock directory input
+
+        output_dir : str
+            Path of CSV directory output
+
         """
         file_handle = None
         outfile = None
@@ -200,6 +252,15 @@ class DataFileInfo(object):
     def convert2ascii(self, input_dir, output_dir):
         """
         Load Metastock data file and output the data to text file.
+
+        Parameters
+        ----------
+        input_dir : str
+            Path of MetaStock directory input
+
+        output_dir : str
+            Path of CSV directory output
+
         """
         print(("Processing %s (fileNo %d)" % (self.stock_symbol, self.file_num)))
         try:
@@ -214,16 +275,29 @@ class DataFileInfo(object):
 class MSEMasterFile(object):
     """
     Metastock extended index file
-    @ivar stocks: list of DataFileInfo objects
+    Control file number 1-255
+
+    Private Variables
+    ----------
+    stocks : list(DataFileInfo)
+        List of DataFileInfo objects
+
     """
     stocks = None
 
     def _read_file_info(self, file_handle):
         """
         read the entry for a single symbol and return a DataFileInfo
-        describing it
-        @parm file_handle: emaster file handle
-        @return: DataFileInfo instance
+
+        Parameters
+        ----------
+        file_handle
+            EMASTER file handle
+
+        Returns
+        -------
+        DataFileInfo
+
         """
         dfi = DataFileInfo()
         file_handle.read(2)
@@ -246,19 +320,25 @@ class MSEMasterFile(object):
     def __init__(self, options):
         """
         The whole file is read while creating this object
-        @param filename: name of the file to open (usually 'EMASTER')
-        @param precision: round floats to n digits after the decimal point
+
+        Parameters
+        ----------
+        options.filename : str
+            Name of the file to open (usually 'EMASTER')
+
+        options.precision : int
+            round floats to n digits after the decimal point
+
         """
         precision = not (options.precision) and None or options.precision
         if precision is not None:
             DataFileInfo.FloatColumn.precision = precision
         file_handle = open(os.path.join(options.input_dir, 'EMASTER'), 'rb')
         files_no = readshort(file_handle.read(2))
-        last_file = readshort(file_handle.read(2))
+        # last_file = readshort(file_handle.read(2))
         file_handle.read(188)
         self.stocks = []
         self.options = options
-        # print files_no, last_file
         while files_no > 0:
             self.stocks.append(self._read_file_info(file_handle))
             files_no -= 1
@@ -266,8 +346,7 @@ class MSEMasterFile(object):
 
     def list_all_symbols(self):
         """
-        Lists all the symbols from metastock index file and writes it
-        to the output
+        Lists all the symbols from metastock index file and writes it to the output
         """
         print("List of available symbols:")
         for stock in self.stocks:
@@ -278,27 +357,47 @@ class MSEMasterFile(object):
         """
         Read all or specified symbols and write them to text
         files (each symbol in separate file)
-        @param all_symbols: when True, all symbols are processed
-        @type all_symbols: C{bool}
-        @param symbols: list of symbols to process
+
+        Parameters
+        ----------
+        all_symbols : bool
+            When True, all symbols are processed
+
+        symbols : list(str)
+            List of symbols to process
+
         """
         for stock in self.stocks:
             if all_symbols or (stock.stock_symbol in symbols):
                 stock.convert2ascii(self.options.input_dir, self.options.output_dir)
 
+
 class MSXMasterFile(object):
     """
     Metastock XMASTER index file
-    @ivar stocks: list of DataFileInfo objects
+    Control file number 255+
+
+    Private Variables
+    ----------
+    stocks : list(DataFileInfo)
+        List of DataFileInfo objects
+
     """
     stocks = None
 
     def _read_file_info(self, file_handle):
         """
         read the entry for a single symbol and return a DataFileInfo
-        describing it
-        @parm file_handle: emaster file handle
-        @return: DataFileInfo instance
+
+        Parameters
+        ----------
+        file_handle
+            XMASTER file handle
+
+        Returns
+        -------
+        DataFileInfo
+
         """
         dfi = DataFileInfo()
         file_handle.read(1)
@@ -317,8 +416,15 @@ class MSXMasterFile(object):
     def __init__(self, options):
         """
         The whole file is read while creating this object
-        @param filename: name of the file to open (usually 'XMASTER')
-        @param precision: round floats to n digits after the decimal point
+
+        Parameters
+        ----------
+        options.filename : str
+            Name of the file to open (usually 'XMASTER')
+
+        options.precision : int
+            round floats to n digits after the decimal point
+
         """
         precision = not (options.precision) and options.precision or None
         if precision is not None:
@@ -341,8 +447,7 @@ class MSXMasterFile(object):
 
     def list_all_symbols(self):
         """
-        Lists all the symbols from metastock index file and writes it
-        to the output
+        Lists all the symbols from metastock index file and writes it to the output
         """
         print("List of available symbols:")
         for stock in self.stocks:
@@ -353,9 +458,15 @@ class MSXMasterFile(object):
         """
         Read all or specified symbols and write them to text
         files (each symbol in separate file)
-        @param all_symbols: when True, all symbols are processed
-        @type all_symbols: C{bool}
-        @param symbols: list of symbols to process
+
+        Parameters
+        ----------
+        all_symbols : bool
+            When True, all symbols are processed
+
+        symbols : list(str)
+            List of symbols to process
+
         """
         for stock in self.stocks:
             if all_symbols or (stock.stock_symbol in symbols):

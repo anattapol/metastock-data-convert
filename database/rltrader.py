@@ -1,5 +1,5 @@
 """
-Connect to MySQL server
+Upload data to RLTrader data set
 """
 
 import csv
@@ -25,25 +25,30 @@ class RLTraderConnector(object):
 
         Parameters
         ----------
-        options :
-            config_path : str
-                Path to dbconfig.json, use for connecting to database
-            force : bool
-                Force upload to replace existing price data on symbol that recognized
+        options.config_path : str
+            Path to dbconfig.json, use for connecting to database
+
+        options.force : bool, optional
+            Force upload to replace existing price data on symbol that recognized
 
         Private Variables
         ----------
-        cache_symbol :
+        cache_symbol : str
             Buffer mapping symbol_name -> SymbolSQLRow
-        config :
+
+        config
             Store database configuration read from dbconfig.json
-        connection :
+
+        connection
             Store activate MySQL connection
-        force :
+
+        force : bool
             Store command line `options.force` value
-        market_id :
+
+        market_id : int
             Store current market_id
-        upload_payload :
+
+        upload_payload : list(tuple)
             Buffer rows for bulk REPLACE(INSERT) operation
 
         """
@@ -83,7 +88,6 @@ class RLTraderConnector(object):
         Returns
         -------
         MarketSQLRow
-            All columns from `market`
 
         """
         with self.connection.cursor() as cursor:
@@ -102,12 +106,10 @@ class RLTraderConnector(object):
         Parameters
         ----------
         symbol : str
-            Symbol of Security. Retrieved from CSV file name.
 
         Returns
         -------
         SymbolSQLRow
-            All columns from `symbol`
 
         """
         with self.connection.cursor() as cursor:
@@ -135,12 +137,10 @@ class RLTraderConnector(object):
         Parameters
         ----------
         symbol_id : int
-            Symbol of Security. Retrieved from CSV file name.
 
         Returns
         -------
         int
-            Number of rows owned by symbol_id
 
         """
         with self.connection.cursor() as cursor:
@@ -157,6 +157,7 @@ class RLTraderConnector(object):
         ----------
         row_index : int
             Symbol of Security. Retrieved from CSV file name.
+
         csv_row : CSVRow
             Row data read from CSV
                 [0] symbol_name
@@ -211,7 +212,6 @@ class RLTraderConnector(object):
         Parameters
         ----------
         symbol : str
-            Symbol of Security
 
         """
         size = len(self.upload_payload)
@@ -232,8 +232,8 @@ class RLTraderConnector(object):
         Parameters
         ----------
         dirpath : str
-            Path if input directory
-        filters : list(str)
+
+        filters : list(str), optional
             List of market that will be process
             Default will scan all market
 
@@ -260,11 +260,8 @@ class RLTraderConnector(object):
 
         Parameters
         ----------
-        path : str
-            Path if input directory
-        filters : list(str)
-            List of market that will be process
-            Default will scan all market
+        dirpath : str
+        filename : str
 
         """
         symbol = os.path.splitext(filename)[0]
@@ -291,7 +288,6 @@ class RLTraderConnector(object):
         Parameters
         ----------
         symbol : str
-            Symbol of Security
 
         Returns
         -------

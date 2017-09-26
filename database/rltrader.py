@@ -55,7 +55,7 @@ class RLTraderConnector(object):
 
             sql = "INSERT INTO `symbol`(name,market_id) VALUES(%s,%s)"
             cursor.execute(sql, (symbol, self.market_id))
-            self.connection.commit()
+            # self.connection.commit()
 
             sql = "SELECT * FROM `symbol` WHERE ID=last_insert_id()"
             cursor.execute(sql)

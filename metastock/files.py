@@ -197,7 +197,12 @@ class DataFileInfo(object):
         try:
             ext = (self.file_num <= 255) and 'DAT' or 'MWD'
             filename = 'F%d.%s' % (self.file_num, ext)
-            file_handle = open(os.path.join(input_dir, filename), 'rb')
+            fullpath = os.path.join(input_dir, filename)
+            if os.path.getsize(fullpath) == 28:
+                print("Corrupt DAT suspected file no: %d" % self.file_num)
+                return
+
+            file_handle = open(fullpath, 'rb')
             self.max_recs = readshort(file_handle.read(2))
             self.last_rec = readshort(file_handle.read(2))
 
@@ -208,7 +213,8 @@ class DataFileInfo(object):
             # print "Expecting %d candles in file %s. num_fields : %d" % \
             #    (self.last_rec - 1, filename, self.num_fields)
 
-            output_filename = os.path.join(output_dir, '%s.TXT' % self.stock_symbol)
+            sanitize_filename = self.stock_symbol.replace('/','_')
+            output_filename = os.path.join(output_dir, '%s.TXT' % sanitize_filename)
             outfile = open(output_filename, 'w')
             # write the header line, for example:
             # "Name","Date","Time","Open","High","Low","Close","Volume","Oi"
@@ -233,7 +239,7 @@ class DataFileInfo(object):
                         b = file_handle.read(col.dataSize)
                         # decode the data
                         if (len(b) == 0):
-                            print("Corrupt DAT skipped file no: %d" % self.file_num)
+                            print("Corrupt DAT after read skipped file no: %d" % self.file_num)
                             return
 
                         value = col.read(b)
@@ -262,14 +268,14 @@ class DataFileInfo(object):
             Path of CSV directory output
 
         """
-        print(("Processing %s (fileNo %d)" % (self.stock_symbol, self.file_num)))
+        print("Processing %s (fileNo %d)" % (self.stock_symbol, self.file_num))
         try:
             # print self.stock_symbol, self.file_num
             self._load_columns()
             # print self.columns
             self.load_candles(input_dir, output_dir)
         except Exception:
-            print(("Error while converting symbol", self.stock_symbol))
+            print("Error while converting symbol", self.stock_symbol)
             traceback.print_exc()
 
 class MSEMasterFile(object):
@@ -351,8 +357,8 @@ class MSEMasterFile(object):
         """
         print("List of available symbols:")
         for stock in self.stocks:
-            print(("symbol: %s, name: %s, file number: %s" %
-                   (stock.stock_symbol, stock.stock_name, stock.file_num)))
+            print("symbol: %s, name: %s, file number: %s" %
+                   (stock.stock_symbol, stock.stock_name, stock.file_num))
 
     def output_ascii(self, all_symbols, symbols):
         """
@@ -452,8 +458,8 @@ class MSXMasterFile(object):
         """
         print("List of available symbols:")
         for stock in self.stocks:
-            print(("symbol: %s, name: %s, file number: %s" %
-                   (stock.stock_symbol, stock.stock_name, stock.file_num)))
+            print("symbol: %s, name: %s, file number: %s" %
+                   (stock.stock_symbol, stock.stock_name, stock.file_num))
 
     def output_ascii(self, all_symbols, symbols):
         """

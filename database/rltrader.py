@@ -264,7 +264,7 @@ class RLTraderConnector(object):
         filename : str
 
         """
-        symbol = os.path.splitext(filename)[0]
+        symbol = os.path.splitext(filename)[0].replace('_','/')
 
         # Skip if already uploaded
         if not self._process_start(symbol) and not self.force:

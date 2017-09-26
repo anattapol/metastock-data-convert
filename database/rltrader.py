@@ -63,6 +63,13 @@ class RLTraderConnector(object):
             row['is_new'] = True
             return row
 
+    def get_price_count(self, symbol_id):
+        with self.connection.cursor() as cursor:
+            sql = "SELECT count(*) FROM `price` WHERE symbol_id=%s"
+            cursor.execute(sql, (symbol_id,))
+            row = cursor.fetchone()
+            return row[0]
+
     def _process_row(self, row_index, csv_row):
         # Add new rows into self.upload_payload
         self.upload_payload.append(
@@ -80,6 +87,8 @@ class RLTraderConnector(object):
         print('Loading %s...' % symbol)
         fetch_row = self.get_symbol(symbol)
         self.upload_payload = []
+        rds_row_count = self.get_price_count(fetch_row['id'])
+        print('row count: %d' % rds_row_count)
         return fetch_row['is_new']
 
     def _process_end(self, symbol):
@@ -100,9 +109,11 @@ class RLTraderConnector(object):
             market = os.path.basename(dirpath)
             if filters is None or market in filters:
                 self.set_market(market)
-                for filename in sorted(filenames):
-                    if len(filename) > 0:
-                        self._read_csv(dirpath, filename)
+
+                # Only grab csv file with extension .TXT
+                csv_list = sorted([f for f in filenames if f.endswith('.TXT') and not f.startswith('$')])
+                for filename in csv_list:
+                    self._read_csv(dirpath, filename)
 
     def _read_csv(self, dir, filename):
         symbol = os.path.splitext(filename)[0]

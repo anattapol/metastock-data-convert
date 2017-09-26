@@ -1,5 +1,5 @@
 """
-Connect to MySQl server
+Connect to MySQL server
 """
 
 import csv
@@ -18,6 +18,35 @@ class RLTraderConnector(object):
     upload_payload = []
 
     def __init__(self, options):
+        """
+        RLTraderConnector Constructor
+
+        Copy options into private variable
+
+        Parameters
+        ----------
+        options :
+            config_path : str
+                Path to dbconfig.json, use for connecting to database
+            force : bool
+                Force upload to replace existing price data on symbol that recognized
+
+        Private Variables
+        ----------
+        cache_symbol :
+            Buffer mapping symbol_name -> SymbolSQLRow
+        config :
+            Store database configuration read from dbconfig.json
+        connection :
+            Store activate MySQL connection
+        force :
+            Store command line `options.force` value
+        market_id :
+            Store current market_id
+        upload_payload :
+            Buffer rows for bulk REPLACE(INSERT) operation
+
+        """
         with open(options.config_path) as json_data_file:
             self.config = json.load(json_data_file)['database']
 
@@ -33,10 +62,30 @@ class RLTraderConnector(object):
         )
 
     def __del__(self):
+        """
+        Close MySQL Connection after object has been garbage collected
+        """
         if self.connection:
             self.connection.close()
 
     def set_market(self, symbol):
+        """
+        Fetch row data from `market`
+        Also change self.market_id for preceding upload chunks
+
+        Require market data to be pre-existing in database
+
+        Parameters
+        ----------
+        symbol : str
+            Symbol of Market. Retrieved from csv-directory structure.
+
+        Returns
+        -------
+        MarketSQLRow
+            All columns from `market`
+
+        """
         with self.connection.cursor() as cursor:
             sql = "SELECT * FROM `market` WHERE name=%s"
             cursor.execute(sql, (symbol,))
@@ -45,6 +94,22 @@ class RLTraderConnector(object):
             return row
 
     def get_symbol(self, symbol):
+        """
+        Fetch row data from `symbol`
+
+        If that symbol is not existing, create new symbol and return new row
+
+        Parameters
+        ----------
+        symbol : str
+            Symbol of Security. Retrieved from CSV file name.
+
+        Returns
+        -------
+        SymbolSQLRow
+            All columns from `symbol`
+
+        """
         with self.connection.cursor() as cursor:
             sql = "SELECT * FROM `symbol` WHERE name=%s and market_id=%s"
             cursor.execute(sql, (symbol, self.market_id))
@@ -64,6 +129,20 @@ class RLTraderConnector(object):
             return row
 
     def get_price_count(self, symbol_id):
+        """
+        Fetch count rows owned by symbol_id
+
+        Parameters
+        ----------
+        symbol_id : int
+            Symbol of Security. Retrieved from CSV file name.
+
+        Returns
+        -------
+        int
+            Number of rows owned by symbol_id
+
+        """
         with self.connection.cursor() as cursor:
             sql = "SELECT count(*) FROM `price` WHERE symbol_id=%s"
             cursor.execute(sql, (symbol_id,))
@@ -71,7 +150,24 @@ class RLTraderConnector(object):
             return row[0]
 
     def _process_row(self, row_index, csv_row):
-        # Add new rows into self.upload_payload
+        """
+        Add new rows into self.upload_payload
+
+        Parameters
+        ----------
+        row_index : int
+            Symbol of Security. Retrieved from CSV file name.
+        csv_row : CSVRow
+            Row data read from CSV
+                [0] symbol_name
+                [1] date
+                [2] open
+                [3] high
+                [4] low
+                [5] close
+                [6] volume
+
+        """
         self.upload_payload.append(
             (self._cache_symbol_id(csv_row[0]),
              datetime.strptime(csv_row[1], '%Y%m%d').date(),
@@ -84,6 +180,22 @@ class RLTraderConnector(object):
         )
 
     def _process_start(self, symbol):
+        """
+        Check before start read csv
+
+        Currently does not proceed if symbol existed in database
+
+        Parameters
+        ----------
+        symbol : str
+            Symbol of Security
+
+        Returns
+        -------
+        bool
+            Should proceed to read csv file or not
+
+        """
         print('Loading %s...' % symbol)
         fetch_row = self.get_symbol(symbol)
         self.upload_payload = []
@@ -92,6 +204,16 @@ class RLTraderConnector(object):
         return fetch_row['is_new']
 
     def _process_end(self, symbol):
+        """
+        Perform bulk REPLACE(INSERT) from self.upload_payload once csv has been read for that security
+        Commit afterward
+
+        Parameters
+        ----------
+        symbol : str
+            Symbol of Security
+
+        """
         size = len(self.upload_payload)
         print('Upload %d rows' % size)
         if size > 0:
@@ -102,10 +224,23 @@ class RLTraderConnector(object):
             self.connection.commit()
             print('Committed')
 
-    def walk_market(self, path, filters=None):
+    def walk_market(self, dirpath, filters=None):
+        """
+        Scan through all file in path. If market symbol found in filters then proceed read csv from that directory
+        File in directory need to end with .TXT and not start with '$' (funky data from CDCDL)
+
+        Parameters
+        ----------
+        dirpath : str
+            Path if input directory
+        filters : list(str)
+            List of market that will be process
+            Default will scan all market
+
+        """
         if isinstance(filters,str):
             filters = (filters,)
-        for dirpath, dirnames, filenames in os.walk(path):
+        for dirpath, dirnames, filenames in os.walk(dirpath):
             market = os.path.basename(dirpath)
             if filters is None or market in filters:
                 self.set_market(market)
@@ -115,7 +250,23 @@ class RLTraderConnector(object):
                 for filename in csv_list:
                     self._read_csv(dirpath, filename)
 
-    def _read_csv(self, dir, filename):
+    def _read_csv(self, dirpath, filename):
+        """
+        Read csv file
+
+        Pre-check condition using self._process_start(symbol)
+        Process row using self._process_row(i, line)
+        Commit rows using self._process_end(symbol)
+
+        Parameters
+        ----------
+        path : str
+            Path if input directory
+        filters : list(str)
+            List of market that will be process
+            Default will scan all market
+
+        """
         symbol = os.path.splitext(filename)[0]
 
         # Skip if already uploaded
@@ -123,7 +274,7 @@ class RLTraderConnector(object):
             print('Skipped!')
             return
 
-        with open(os.path.join(dir, filename), 'r', newline='') as f:
+        with open(os.path.join(dirpath, filename), 'r', newline='') as f:
             reader = csv.reader(f, delimiter=',')
             # Skip Header
             next(reader)
@@ -133,6 +284,21 @@ class RLTraderConnector(object):
             self._process_end(symbol)
 
     def _cache_symbol_id(self, symbol):
+        """
+        Find symbol_id self.cache_symbol
+        If not hit, fetch from database using self.get_symbol(symbol)
+
+        Parameters
+        ----------
+        symbol : str
+            Symbol of Security
+
+        Returns
+        -------
+        int
+            symbol_id
+
+        """
         symbol_row = self.cache_symbol.get(symbol)
         if symbol_row is not None:
             return symbol_row['id']

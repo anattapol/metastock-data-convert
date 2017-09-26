@@ -1,3 +1,4 @@
 .idea
 __pycache__
 dbconfig.json
+rsync_pass

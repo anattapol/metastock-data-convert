@@ -92,7 +92,7 @@ class DataFileInfo(object):
         def __init__(self, name):
             self.name = name
 
-        def read(self, bytes):
+        def read(self, b):
             """
             Read and return a column value
             """
@@ -335,10 +335,11 @@ class MSEMasterFile(object):
             DataFileInfo.FloatColumn.precision = precision
         file_handle = open(os.path.join(options.input_dir, 'EMASTER'), 'rb')
         files_no = readshort(file_handle.read(2))
-        # last_file = readshort(file_handle.read(2))
+        last_file = readshort(file_handle.read(2))
         file_handle.read(188)
         self.stocks = []
         self.options = options
+        # print files_no, last_file
         while files_no > 0:
             self.stocks.append(self._read_file_info(file_handle))
             files_no -= 1
@@ -435,7 +436,7 @@ class MSXMasterFile(object):
         file_handle.read(2)
         last_file = readshort(file_handle.read(2))
         file_handle.read(2)
-        next = readshort( file_handle.read(2))
+        next = readshort(file_handle.read(2))
         file_handle.read(130)
         self.stocks = []
         self.options = options

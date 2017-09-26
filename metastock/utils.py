@@ -110,7 +110,7 @@ def readstr(b):
     str
 
     """
-    return b.decode('ascii').split('\x00', 1)[0]
+    return b[:b.index(b'\0')].decode('ascii')
 
 
 def readchar(b):

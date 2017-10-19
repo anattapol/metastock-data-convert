@@ -66,20 +66,28 @@ def scan_directory(options, args, subdirname=None):
         pass subdirname from loop
 
     """
-    try:
+    fullpath = subdirname is not None and \
+                os.path.join(options.input_dir, subdirname) or \
+                os.path.join(options.input_dir)
+
+    if os.path.isfile(os.path.join(fullpath, 'EMASTER')):
         em_file = MSEMasterFile(options, subdirname)
-        xm_file = MSXMasterFile(options, subdirname)
-    except FileNotFoundError:
-        print('Could not found file %s in path %s' % ('EMASTER / XMASTER', options.input_dir))
+        # list the symbols or extract the data
+        if options.list:
+            em_file.list_all_symbols()
+        else:
+            em_file.output_ascii(options.all, args)
+    else:
+        print('Could not found file %s in path %s' % ('EMASTER', options.input_dir, subdirname))
         exit(1)
 
-    # list the symbols or extract the data
-    if options.list:
-        em_file.list_all_symbols()
-        xm_file.list_all_symbols()
-    else:
-        em_file.output_ascii(options.all, args)
-        xm_file.output_ascii(options.all, args)
+    if os.path.isfile(os.path.join(fullpath, 'XMASTER')):
+        xm_file = MSXMasterFile(options, subdirname)
+        # list the symbols or extract the data
+        if options.list:
+            xm_file.list_all_symbols()
+        else:
+            xm_file.output_ascii(options.all, args)
 
 
 if __name__ == '__main__':

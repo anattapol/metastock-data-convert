@@ -51,6 +51,21 @@ def main():
 
 
 def scan_directory(options, args, subdirname=None):
+    """
+    Add support to CDCDL substructure
+
+    Parameters
+    ----------
+    options
+        pass options
+
+    args
+        pass args
+
+    subdirname
+        pass subdirname from loop
+
+    """
     try:
         em_file = MSEMasterFile(options, subdirname)
         xm_file = MSXMasterFile(options, subdirname)

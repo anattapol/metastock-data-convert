@@ -323,7 +323,7 @@ class MSEMasterFile(object):
         file_handle.read(116)
         return dfi
 
-    def __init__(self, options):
+    def __init__(self, options, subdir=None):
         """
         The whole file is read while creating this object
 
@@ -339,7 +339,10 @@ class MSEMasterFile(object):
         precision = not (options.precision) and None or options.precision
         if precision is not None:
             DataFileInfo.FloatColumn.precision = precision
-        file_handle = open(os.path.join(options.input_dir, 'EMASTER'), 'rb')
+        file_name = subdir is not None and \
+            os.path.join(options.input_dir, subdir, 'EMASTER') or \
+            os.path.join(options.input_dir, 'EMASTER')
+        file_handle = open(file_name, 'rb')
         files_no = readshort(file_handle.read(2))
         last_file = readshort(file_handle.read(2))
         file_handle.read(188)
@@ -420,7 +423,7 @@ class MSXMasterFile(object):
         file_handle.read(30)
         return dfi
 
-    def __init__(self, options):
+    def __init__(self, options, subdir=None):
         """
         The whole file is read while creating this object
 
@@ -436,7 +439,10 @@ class MSXMasterFile(object):
         precision = not (options.precision) and options.precision or None
         if precision is not None:
             DataFileInfo.FloatColumn.precision = precision
-        file_handle = open(os.path.join(options.input_dir, 'XMASTER'), 'rb')
+        file_name = subdir is not None and \
+                    os.path.join(options.input_dir, subdir, 'EMASTER') or \
+                    os.path.join(options.input_dir, 'XMASTER')
+        file_handle = open(file_name, 'rb')
         file_handle.read(10)
         files_no = readshort(file_handle.read(2))
         file_handle.read(2)

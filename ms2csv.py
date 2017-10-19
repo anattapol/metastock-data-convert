@@ -45,9 +45,15 @@ def main():
     options.input_dir = not (options.input_dir) and '.' or os.path.realpath(options.input_dir)
     options.output_dir = not (options.output_dir) and '.' or os.path.realpath(options.output_dir)
 
+    for dirpath, dirnames, filenames in os.walk(options.input_dir):
+        for subdirname in dirnames:
+            scan_directory(options, args, subdirname)
+
+
+def scan_directory(options, args, subdirname=None):
     try:
-        em_file = MSEMasterFile(options)
-        xm_file = MSXMasterFile(options)
+        em_file = MSEMasterFile(options, subdirname)
+        xm_file = MSXMasterFile(options, subdirname)
     except FileNotFoundError:
         print('Could not found file %s in path %s' % ('EMASTER / XMASTER', options.input_dir))
         exit(1)

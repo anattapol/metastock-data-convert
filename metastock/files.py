@@ -336,13 +336,13 @@ class MSEMasterFile(object):
             round floats to n digits after the decimal point
 
         """
+        self.input_dir = subdir is not None and \
+                        os.path.join(options.input_dir, subdir) or \
+                        os.path.join(options.input_dir)
         precision = not (options.precision) and None or options.precision
         if precision is not None:
             DataFileInfo.FloatColumn.precision = precision
-        file_name = subdir is not None and \
-            os.path.join(options.input_dir, subdir, 'EMASTER') or \
-            os.path.join(options.input_dir, 'EMASTER')
-        file_handle = open(file_name, 'rb')
+        file_handle = open(os.path.join(self.input_dir, 'EMASTER'), 'rb')
         files_no = readshort(file_handle.read(2))
         last_file = readshort(file_handle.read(2))
         file_handle.read(188)
@@ -379,7 +379,7 @@ class MSEMasterFile(object):
         """
         for stock in self.stocks:
             if all_symbols or (stock.stock_symbol in symbols):
-                stock.convert2ascii(self.options.input_dir, self.options.output_dir)
+                stock.convert2ascii(self.input_dir, self.options.output_dir)
 
 
 class MSXMasterFile(object):
@@ -436,13 +436,13 @@ class MSXMasterFile(object):
             round floats to n digits after the decimal point
 
         """
+        self.input_dir = subdir is not None and \
+                        os.path.join(options.input_dir, subdir) or \
+                        os.path.join(options.input_dir)
         precision = not (options.precision) and options.precision or None
         if precision is not None:
             DataFileInfo.FloatColumn.precision = precision
-        file_name = subdir is not None and \
-                    os.path.join(options.input_dir, subdir, 'EMASTER') or \
-                    os.path.join(options.input_dir, 'XMASTER')
-        file_handle = open(file_name, 'rb')
+        file_handle = open(os.path.join(self.input_dir, 'XMASTER'), 'rb')
         file_handle.read(10)
         files_no = readshort(file_handle.read(2))
         file_handle.read(2)
@@ -483,4 +483,4 @@ class MSXMasterFile(object):
         """
         for stock in self.stocks:
             if all_symbols or (stock.stock_symbol in symbols):
-                stock.convert2ascii(self.options.input_dir, self.options.output_dir)
+                stock.convert2ascii(self.input_dir, self.options.output_dir)

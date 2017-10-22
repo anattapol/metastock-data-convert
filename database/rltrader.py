@@ -146,10 +146,10 @@ class RLTraderConnector(object):
 
         """
         with self.connection.cursor() as cursor:
-            sql = "SELECT count(*) FROM `price` WHERE symbol_id=%s"
+            sql = "SELECT count(*) as COUNT FROM `price` WHERE symbol_id=%s"
             cursor.execute(sql, (symbol_id,))
             row = cursor.fetchone()
-            return cursor.rowcount > 0 and row[0] or 0
+            return cursor.rowcount > 0 and row['COUNT'] or 0
 
     def _process_row(self, row_index, csv_row):
         """

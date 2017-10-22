@@ -25,9 +25,9 @@ def main():
 
     parser = OptionParser(usage=Usage)
     parser.add_option('-l', '--list', action='store_true', dest='list',
-                  help='list all the symbols from EMASTER file')
+                      help='list all the symbols from EMASTER/XMASTER file')
     parser.add_option('-a', '--all', action='store_true', dest='all',
-                      help='extract all the symbols from EMASTER file')
+                      help='extract all the symbols from EMASTER/XMASTER file')
     parser.add_option('-p', '--precision', type='int', dest='precision',
                       help='round the floating point numbers to PRECISION digits after the decimal point (default: 2)')
     parser.add_option('-i', '--input', type='string', dest='input_dir',
@@ -42,8 +42,8 @@ def main():
         parser.print_help()
         sys.exit(0)
 
-    options.input_dir = not (options.input_dir) and '.' or os.path.realpath(options.input_dir)
-    options.output_dir = not (options.output_dir) and '.' or os.path.realpath(options.output_dir)
+    options.input_dir = not options.input_dir and '.' or os.path.realpath(options.input_dir)
+    options.output_dir = not options.output_dir and '.' or os.path.realpath(options.output_dir)
 
     for dirpath, dirnames, filenames in os.walk(options.input_dir):
         for subdirname in dirnames:

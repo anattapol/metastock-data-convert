@@ -6,6 +6,7 @@ import csv
 import os
 import json
 import pymysql.cursors
+import difflib
 from datetime import datetime
 
 
@@ -224,7 +225,7 @@ class RLTraderConnector(object):
             self.connection.commit()
             print('Committed')
 
-    def walk_market(self, dirpath, filters=None):
+    def walk_market(self, filters=None):
         """
         Scan through all file in path. If market symbol found in filters then proceed read csv from that directory
         File in directory need to end with .TXT and not start with '$' (funky data from CDCDL)
@@ -238,9 +239,9 @@ class RLTraderConnector(object):
             Default will scan all market
 
         """
-        if isinstance(filters,str):
+        if isinstance(filters, str):
             filters = (filters,)
-        for dirpath, dirnames, filenames in os.walk(dirpath):
+        for dirpath, dirnames, filenames in os.walk(self.options.input_dir):
             market = os.path.basename(dirpath)
             if filters is None or market in filters:
                 self.set_market(market)
@@ -248,7 +249,10 @@ class RLTraderConnector(object):
                 # Only grab csv file with extension .TXT
                 csv_list = sorted([f for f in filenames if f.endswith('.TXT') and not f.startswith('$')])
                 for filename in csv_list:
-                    self._read_csv(dirpath, filename)
+                    if self.options.diff_dir is None:
+                        self._read_csv(dirpath, filename)
+                    else:
+                        self._diff_csv(self.options.input_dir, self.options.diff_dir, market, filename)
 
     def _read_csv(self, dirpath, filename):
         """
@@ -279,6 +283,43 @@ class RLTraderConnector(object):
             for i, line in enumerate(reader):
                 self._process_row(i, line)
             self._process_end(symbol)
+
+    def _diff_csv(self, new_dir, old_dir, market, filename):
+        """
+        Diff csv file
+
+        Use difflib to upload only new records
+        if old_csv_path not exists then upload whole file using _read_csv
+        Pre-check condition using self._process_start(symbol)
+        Process row using self._process_row(i, line)
+        Commit rows using self._process_end(symbol)
+
+        Parameters
+        ----------
+        new_dir : str
+        old_dir : str
+        market : str
+        filename : str
+
+        """
+        new_csv_path = os.path.join(new_dir, market, filename)
+        old_csv_path = os.path.join(old_dir, market, filename)
+        if not os.path.isfile(old_csv_path):
+            return self._read_csv(os.path.join(new_dir, market), filename)
+
+        diff = []
+        with open(old_csv_path, 'r') as f1, open(new_csv_path, 'r') as f2:
+            differ = difflib.Differ()
+            for line in differ.compare(f1.read().splitlines(), f2.read().splitlines()):
+                if line.startswith('+ '):
+                    diff.append(line[2:])
+
+        symbol = os.path.splitext(filename)[0].replace('_', '/')
+        self._process_start(symbol)
+        reader = csv.reader(diff, delimiter=',')
+        for i, line in enumerate(reader):
+            self._process_row(i, line)
+        self._process_end(symbol)
 
     def _cache_symbol_id(self, symbol):
         """

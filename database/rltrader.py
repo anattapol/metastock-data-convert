@@ -203,7 +203,7 @@ class RLTraderConnector(object):
         fetch_row = self.get_symbol(symbol)
         self.upload_payload = []
         rds_row_count = self.get_price_count(fetch_row['id'])
-        print('row count: %d' % rds_row_count)
+        print('Database row count:  %d' % rds_row_count)
         return fetch_row['is_new']
 
     def _process_end(self, symbol):
@@ -217,7 +217,7 @@ class RLTraderConnector(object):
 
         """
         size = len(self.upload_payload)
-        print('Upload %d rows' % size)
+        print('Uploaded row count:  %d' % size)
         if size > 0:
             with self.connection.cursor() as cursor:
                 sql = ("REPLACE INTO `price`(symbol_id,date,open,high,low,close,volume) "
@@ -316,11 +316,15 @@ class RLTraderConnector(object):
                     diff.append(line[2:])
 
         symbol = os.path.splitext(filename)[0].replace('_', '/')
-        self._process_start(symbol)
-        reader = csv.reader(diff, delimiter=',')
-        for i, line in enumerate(reader):
-            self._process_row(i, line)
-        self._process_end(symbol)
+        if len(diff) > 0:
+            self._process_start(symbol)
+            reader = csv.reader(diff, delimiter=',')
+            for i, line in enumerate(reader):
+                self._process_row(i, line)
+            self._process_end(symbol)
+        else:
+            print('Loading %s...' % symbol)
+            print('No update')
 
     def _cache_symbol_id(self, symbol):
         """

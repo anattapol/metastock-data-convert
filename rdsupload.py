@@ -22,7 +22,7 @@ def main():
                       help='database config')
     parser.add_option('-a', '--all', action='store_true', dest='all',
                       help='upload all symbols in market')
-    parser.add_option('-d', '--diff', action='string', dest='diff_dir',
+    parser.add_option('-d', '--diff', type='string', dest='diff_dir',
                       help='diff directory')
     parser.add_option('-i', '--input', type='string', dest='input_dir',
                       help='input directory')

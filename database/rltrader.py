@@ -56,6 +56,7 @@ class RLTraderConnector(object):
         with open(options.config_path) as json_data_file:
             self.config = json.load(json_data_file)['database']
 
+        self.options = options
         self.force = options.force
         self.connection = pymysql.connect(
             host=self.config['host'],

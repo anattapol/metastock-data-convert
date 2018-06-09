@@ -45,8 +45,14 @@ def main():
     options.input_dir = not options.input_dir and '.' or os.path.realpath(options.input_dir)
     options.output_dir = not options.output_dir and '.' or os.path.realpath(options.output_dir)
 
+    print(type(options.input_dir))
+    print(options.input_dir)
+    print(os.walk(options.input_dir))
+    print(dir(os.walk(options.input_dir)))
     for dirpath, dirnames, filenames in os.walk(options.input_dir):
         for subdirname in dirnames:
+            print('Starting to scan')
+            print(subdirname)
             scan_directory(options, args, subdirname)
 
 

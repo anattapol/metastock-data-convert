@@ -110,7 +110,12 @@ def readstr(b):
     str
 
     """
-    return b[:b.index(b'\0')].decode('ascii')
+    try:
+        bToStr = b[:b.index(b'\0')].decode('ascii')
+        return bToStr
+    except:
+        pass
+    # return b[:b.index(b'\0')].decode('ascii')
 
 
 def readchar(b):
